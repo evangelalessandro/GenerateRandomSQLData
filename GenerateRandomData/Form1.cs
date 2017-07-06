@@ -67,7 +67,7 @@ namespace GenerateRandomData
         {
             cboTabelle.Items.Clear();
             cboTabelle.Items.Add("<Seleziona tabella>");
-            string sqltext = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' and TABLE_NAME<>'sysdiagrams'";
+            string sqltext = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' and TABLE_NAME<>'sysdiagrams' order by 1";
 
             foreach (DataRow item in getDataTable(sqltext).Rows)
             {
@@ -120,8 +120,8 @@ namespace GenerateRandomData
             {
                 formartVirgola(script, first);
                 first = true;
-                //if (identityList.Where(a=>a.NomeTabella==cboTabelle.Text && a.NomeColonna==)
-                script.Append(item.NomeColonna.PadRight(maxColonnaNameLenght));
+                AddValue(script, item.NomeColonna,maxColonnaNameLenght);
+
             }
             script.AppendLine("    )");
             script.AppendLine("    VALUES (");
@@ -131,36 +131,28 @@ namespace GenerateRandomData
                 formartVirgola(script, first);
 
                 first = true;
-                if (item.TipoDato == "nvarchar")
+                switch (item.Tipo)
                 {
-                    var str = "";
-                    for (int i = 0; i < item.MaxLenght; i++)
-                    {
-                        str += "A";
-                        if (i > 10)
-                            break;
-                    }
-                    script.Append("'" + str + "'");
-                }
-                else if (item.TipoDato == "int")
-                {
-                    script.Append("1");
-                }
-                else if (item.TipoDato == "datetime")
-                {
-                    script.Append("getdate()");
-                }
-                else if (item.TipoDato == "decimal")
-                {
-                    script.Append("0");
-                }
-                else if (item.TipoDato == "bit")
-                {
-                    script.Append("0");
-                }
-                else
-                {
-
+                    case enTypeData.intD:
+                        AddValue(script, "1", maxColonnaNameLenght);
+                        break;
+                    case enTypeData.datetimeD:
+                        AddValue(script, "getdate()", maxColonnaNameLenght);
+                        break;
+                    case enTypeData.decimalD:
+                        AddValue(script, "0", maxColonnaNameLenght);
+                        break;
+                    case enTypeData.bitD:
+                        AddValue(script, "0", maxColonnaNameLenght);
+                        break;
+                    case enTypeData.charD:
+                    case enTypeData.varcharD:
+                    case enTypeData.nvarcharD:
+                        var str = "Concat('" + item.NomeColonna + "',@RowCount) ";
+                        AddValue(script, str, maxColonnaNameLenght);
+                        break;
+                    default:
+                        break;
                 }
             }
             script.AppendLine("    )");
@@ -170,6 +162,11 @@ namespace GenerateRandomData
             script.AppendLine("END");
             textScript.Text = script.ToString();
 
+        }
+
+        private static void AddValue(StringBuilder script, string str, int maxColonnaNameLenght)
+        {
+            script.Append(str.PadRight(maxColonnaNameLenght));
         }
 
         private static void formartVirgola(StringBuilder script, bool first)
@@ -221,11 +218,20 @@ namespace GenerateRandomData
             
 
         }
-        
-           
 
-       
+        private void cboTabelle_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            fillTable();
+        }
 
+        private void fillTable()
+        {
+            UpdateListTableColIdentity();
+
+            var list = new List<GridItem>();
+
+           // _columns.Where(a=>a.NomeColonna )
+        }
     }
 
 }
